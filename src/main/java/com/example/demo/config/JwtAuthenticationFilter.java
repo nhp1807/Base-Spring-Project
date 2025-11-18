@@ -1,0 +1,114 @@
+package com.example.demo.config;
+
+import com.example.demo.service.JwtService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.example.demo.dto.response.ErrorResponse;
+import com.example.demo.cache.AccessTokenCache;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    @Autowired
+    private JwtService jwtService;
+    @Autowired
+    private UserDetailsService userDetailsService;
+    @Autowired
+    private AccessTokenCache accessTokenCache;
+    
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            String jwt = null;
+            final String userEmail;
+            
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+            } else {
+                // Lấy token từ cookie nếu không có trong header
+                if (request.getCookies() != null) {
+                    for (Cookie cookie : request.getCookies()) {
+                        if ("accessToken".equals(cookie.getName())) {
+                            jwt = cookie.getValue();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (jwt == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            userEmail = jwtService.extractUsername(jwt);
+
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    if (accessTokenCache.get(userEmail) == null) {
+                        accessTokenCache.put(userEmail, jwt);
+                    }
+                    
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    sendErrorResponse(response, "Token không hợp lệ hoặc đã hết hạn", HttpStatus.UNAUTHORIZED);
+                    return;
+                }
+            }
+            
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            sendErrorResponse(response, "Lỗi xác thực: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, String message, HttpStatus status) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        
+        ErrorResponse errorResponse = ErrorResponse.builder()
+            .timestamp(new Date())
+            .status(status.value())
+            .error(status.getReasonPhrase())
+            .message(message)
+            .build();
+        
+        String formattedResponse = new ObjectMapper().writeValueAsString(errorResponse);
+        
+        response.getWriter().write(formattedResponse);
+    }
+}
