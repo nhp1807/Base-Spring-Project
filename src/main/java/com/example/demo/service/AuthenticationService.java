@@ -4,8 +4,10 @@ import com.example.demo.dto.request.AuthenticationRequest;
 import com.example.demo.dto.response.AuthenticationResponse;
 import com.example.demo.dto.request.RefreshTokenRequest;
 import com.example.demo.dto.request.RegisterRequest;
+import com.example.demo.enums.ErrorCode;
 import com.example.demo.enums.Role;
 import com.example.demo.enums.UserStatus;
+import com.example.demo.exception.AppException;
 import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.RefreshTokenRepository;
@@ -21,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 @Service
 public class AuthenticationService {
@@ -42,20 +45,23 @@ public class AuthenticationService {
 
     @Transactional
     public ResponseEntity<AuthenticationResponse> register(RegisterRequest request) {
-        if (repository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body(AuthenticationResponse.builder()
-                    .message("Email already exists")
-                    .build());
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        User user = new User();
+        Role[] roles = Role.values();
+        if (!Arrays.asList(roles).contains(request.getRole())) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
 
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.valueOf(request.getRole().toUpperCase()));
-        user.setStatus(UserStatus.ACTIVE);
+        User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.valueOf(request.getRole().toUpperCase()))
+                .status(UserStatus.ACTIVE)
+                .build();
 
         repository.save(user);
 
@@ -89,10 +95,10 @@ public class AuthenticationService {
         );
 
         User user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            throw new RuntimeException("Tài khoản này chưa thiết lập mật khẩu. Vui lòng đăng nhập bằng Google hoặc đặt mật khẩu mới.");
+            throw new AppException(ErrorCode.USER_NOT_SET_PASSWORD);
         }
 
         String accessToken = jwtService.generateAccessToken(user);
@@ -125,11 +131,11 @@ public class AuthenticationService {
 
         if (userEmail != null) {
             User userDetails = repository.findByEmail(userEmail)
-                    .orElseThrow();
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
             // Check if refresh token exists in database
             RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
-                    .orElseThrow(() -> new RuntimeException("Refresh token not found in database"));
+                    .orElseThrow(() -> new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
             if (jwtService.isTokenValid(refreshToken, userDetails)
                     && storedRefreshToken.getExpiryDate().isAfter(Instant.now())) {
 
@@ -145,7 +151,7 @@ public class AuthenticationService {
             }
         }
 
-        throw new RuntimeException("Invalid refresh token");
+        throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
     }
 
     @Transactional
@@ -164,7 +170,7 @@ public class AuthenticationService {
     @Transactional
     public void logout(String refreshToken) {
         User user = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found in database"))
+                .orElseThrow(() -> new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND))
                 .getUser();
         refreshTokenRepository.deleteByUserId(user.getId());
         accessTokenCache.invalidate(user.getEmail());

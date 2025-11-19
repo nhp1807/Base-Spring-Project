@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    
+
     public PageResponse<UserResponse> findAll(String firstName, String lastName, String email, String phoneNumber, String telegramUsername, String lotusUsername, Role role, UserStatus status, String sortBy, String sortOrder, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Specification<User> specification = UserSpecification.filter(firstName, lastName, email, phoneNumber, telegramUsername, lotusUsername, role, status, sortBy, sortOrder);
@@ -51,8 +52,18 @@ public class UserService {
     }
 
     public void create(UserRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        Role[] roles = Role.values();
+        if (!Arrays.asList(roles).contains(request.getRole())) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
+
+        UserStatus[] statuses = UserStatus.values();
+        if (!Arrays.asList(statuses).contains(request.getStatus())) {
+            throw new AppException(ErrorCode.USER_STATUS_NOT_FOUND);
         }
 
         User user = User.builder()
@@ -75,6 +86,16 @@ public class UserService {
             throw new AppException(ErrorCode.CANT_UPDATE_EMAIL);
         }
 
+        Role[] roles = Role.values();
+        if (!Arrays.asList(roles).contains(request.getRole())) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
+
+        UserStatus[] statuses = UserStatus.values();
+        if (!Arrays.asList(statuses).contains(request.getStatus())) {
+            throw new AppException(ErrorCode.USER_STATUS_NOT_FOUND);
+        }
+
         user.setFirstName(request.getFirstName() != null ? request.getFirstName() : user.getFirstName());
         user.setLastName(request.getLastName() != null ? request.getLastName() : user.getLastName());
         user.setPhoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber() : user.getPhoneNumber());
@@ -87,9 +108,11 @@ public class UserService {
     }
 
     public void delete(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (!userRepository.existsById(id)) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
 
-        userRepository.delete(user);
+        userRepository.deleteById(id);
     }
 
     private UserResponse toUserResponse(User user) {
