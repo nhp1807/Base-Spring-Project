@@ -14,9 +14,15 @@ springdoc.swagger-ui.syntaxHighlight.activated=true
 springdoc.swagger-ui.disable-swagger-default-url=true
 
 # Database
-spring.datasource.url=jdbc:mysql://localhost:3306/test_database?allowLoadLocalInfile=true
-spring.datasource.username=root
-spring.datasource.password=N0th1ngSp3cial@123
+spring.datasource.url=jdbc:mysql://localhost:3306/{{database_name}}?allowLoadLocalInfile=true
+spring.datasource.username={{username}}
+spring.datasource.password={{password}}
 spring.datasource.hikari.max-lifetime=1500000
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 spring.jpa.hibernate.ddl-auto=update
+
+# JWT Secret (Base64 encoded)
+jwt.secret={{jwt_secret_base64_encoded}}
+# Token expiration time
+token.access-token-expiration=90000
+token.refresh-token-expiration=60480000
