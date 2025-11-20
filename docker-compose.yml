@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # Cấu hình cho MySQL
+  mysql:
+    image: mysql:8.0
+    environment:
+      # Tên database mặc định
+      MYSQL_DATABASE: test_database
+      # Mật khẩu root
+      MYSQL_ROOT_PASSWORD: rootpassword
+    # Đặt tên service này, Spring Boot sẽ sử dụng nó
+    container_name: mysql-compose
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Cấu hình cho Redis
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis-compose
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
