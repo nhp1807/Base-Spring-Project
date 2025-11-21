@@ -156,14 +156,19 @@ public class AuthenticationService {
 
     @Transactional
     public void saveRefreshToken(String token, User user) {
-        // Delete existing refresh token for this user first
-        refreshTokenRepository.deleteByUserId(user.getId());
+        RefreshToken refreshToken = refreshTokenRepository.findByUserId(user.getId())
+                .map(existing -> {
+                    existing.setToken(token);
+                    existing.setExpiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100));
+                    existing.setUser(user);
+                    return existing;
+                })
+                .orElseGet(() -> RefreshToken.builder()
+                        .token(token)
+                        .user(user)
+                        .expiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100))
+                        .build());
 
-        RefreshToken refreshToken = RefreshToken.builder()
-                .token(token)
-                .user(user)
-                .expiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION/100)) // 7 days
-                .build();
         refreshTokenRepository.save(refreshToken);
     }
 
