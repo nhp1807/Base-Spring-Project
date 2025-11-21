@@ -24,14 +24,14 @@ services:
   # 2. Service Backend (Spring Boot App)
   backend-app:
     # Thay thế bằng tên image thực tế của bạn trên Docker Hub
-    image: ${DOCKER_USERNAME}/spring-base-project:latest
+    image: nhp1807/spring-base-project:latest
     container_name: my_spring_app
     restart: on-failure
     depends_on:
       mysql_db:
         condition: service_healthy # Chỉ chạy App sau khi DB đã khởi động xong
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}" # 8080:8080
+      - "8080:8080" # 8080:8080
     env_file:
       - .env
     environment:
