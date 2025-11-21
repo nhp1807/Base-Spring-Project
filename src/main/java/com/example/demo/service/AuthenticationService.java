@@ -59,7 +59,7 @@ public class AuthenticationService {
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.valueOf(request.getRole().toUpperCase()))
+                .role(request.getRole())
                 .status(UserStatus.ACTIVE)
                 .build();
 
