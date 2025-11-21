@@ -1,6 +1,9 @@
 package com.example.demo.config;
 
+import com.example.demo.cache.AccessTokenCache;
+import com.example.demo.dto.response.ErrorResponse;
 import com.example.demo.service.JwtService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -17,10 +20,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import com.example.demo.dto.response.ErrorResponse;
-import com.example.demo.cache.AccessTokenCache;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -93,6 +92,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             sendErrorResponse(response, "Lỗi xác thực: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return SecurityPaths.isPublicPath(request.getRequestURI());
     }
 
     private void sendErrorResponse(HttpServletResponse response, String message, HttpStatus status) throws IOException {
