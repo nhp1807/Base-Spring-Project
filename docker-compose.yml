@@ -1,35 +1,47 @@
 version: '3.8'
 
 services:
-  # Cấu hình cho MySQL
-  mysql:
+  # 1. Service Database
+  mysql_db:
     image: mysql:8.0
+    container_name: my_mysql_container
+    restart: always
     environment:
-      # Tên database mặc định
+      # Map biến từ file .env vào biến môi trường của MySQL
       MYSQL_DATABASE: test_database
-      # Mật khẩu root
-      MYSQL_ROOT_PASSWORD: rootpassword
-    # Đặt tên service này, Spring Boot sẽ sử dụng nó
-    container_name: mysql-compose
+      MYSQL_ROOT_PASSWORD: N0th1ngSp3cial
     ports:
       - "3307:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 5s
-      retries: 10
     volumes:
-      - mysql_data:/var/lib/mysql
-
-  # Cấu hình cho Redis
-  redis:
-    image: redis:7.0-alpine
-    container_name: redis-compose
-    ports:
-      - "6379:6379"
+      - mysql_data:/var/lib/mysql # Mount volume để không mất dữ liệu khi tắt container
+    networks:
+      - backend-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      timeout: 5s
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
       retries: 10
 
+  # 2. Service Backend (Spring Boot App)
+  backend-app:
+    # Thay thế bằng tên image thực tế của bạn trên Docker Hub
+    image: ${DOCKER_USERNAME}/spring-base-project:latest
+    container_name: my_spring_app
+    restart: on-failure
+    depends_on:
+      mysql_db:
+        condition: service_healthy # Chỉ chạy App sau khi DB đã khởi động xong
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}" # 8080:8080
+    env_file:
+      - .env
+    networks:
+      - backend-network
+
+# Định nghĩa Volume để lưu dữ liệu DB bền vững
 volumes:
   mysql_data:
+
+# Định nghĩa Network để 2 container nhìn thấy nhau
+networks:
+  backend-network:
+    driver: bridge

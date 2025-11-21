@@ -13,6 +13,8 @@ COPY src/ ./src
 
 COPY bin/ ./bin
 
+COPY config/ ./config/
+
 RUN ["mvn", "clean", "install", "-DskipTests"]
 
 RUN ["chmod", "+x", "bin/run.sh"]
