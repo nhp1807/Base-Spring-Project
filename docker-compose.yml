@@ -8,8 +8,8 @@ services:
     restart: always
     environment:
       # Map biến từ file .env vào biến môi trường của MySQL
-      MYSQL_DATABASE: test_database
-      MYSQL_ROOT_PASSWORD: N0th1ngSp3cial
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
