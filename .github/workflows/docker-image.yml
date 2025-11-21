@@ -34,5 +34,5 @@ jobs:
         push: true # Lệnh này xác nhận sẽ Push lên Hub
         # Dưới đây là phần quan trọng: Gắn 2 tags cùng lúc
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/my-image-name:${{ github.sha }}
-          ${{ secrets.DOCKER_USERNAME }}/my-image-name:latest
+          ${{ secrets.DOCKER_USERNAME }}/spring-base-project:${{ github.sha }}
+          ${{ secrets.DOCKER_USERNAME }}/spring-base-project:latest
