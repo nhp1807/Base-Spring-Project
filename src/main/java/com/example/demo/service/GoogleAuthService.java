@@ -29,8 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -57,6 +56,9 @@ public class GoogleAuthService {
     
     @Value("${google.oauth2.client-id}")
     private String googleClientId;
+
+    @Value("${token.refresh-token-expiration}")
+    private long REFRESH_TOKEN_EXPIRATION;
     
     private final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -83,7 +85,7 @@ public class GoogleAuthService {
                 .token(refreshToken)
                 .isRevoked(false)
                 .user(user)
-                .expiryDate(Instant.now().plus(7, ChronoUnit.DAYS))
+                .expiryDate(LocalDateTime.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 1000))
                 .build();
             refreshTokenRepository.save(refreshTokenEntity);
 

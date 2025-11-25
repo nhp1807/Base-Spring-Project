@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -27,7 +26,7 @@ public class RefreshToken {
     private Boolean isRevoked;
     
     @Column(nullable = false)
-    private Instant expiryDate;
+    private LocalDateTime expiryDate;
     
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
 @Service
@@ -141,7 +141,7 @@ public class AuthenticationService {
             }
 
             if (jwtService.isTokenValid(refreshToken, userDetails)
-                    && storedRefreshToken.getExpiryDate().isAfter(Instant.now())) {
+                    && storedRefreshToken.getExpiryDate().isAfter(LocalDateTime.now())) {
 
                 // Only generate new access token, keep the same refresh token
                 String accessToken = jwtService.generateAccessToken(userDetails);
@@ -164,7 +164,7 @@ public class AuthenticationService {
                 .token(token)
                 .isRevoked(false)
                 .user(user)
-                .expiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100))
+                .expiryDate(LocalDateTime.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100))
                 .build();
         refreshTokenRepository.save(refreshToken);
     }
