@@ -20,6 +20,7 @@ import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -90,11 +91,12 @@ public class JwtService {
     private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
         Map<String, Object> claims = new HashMap<>(extraClaims);
         
-        // Thêm id và role vào claims nếu userDetails là User object
+        // Thêm JWT ID, User ID và User Role vào claims nếu userDetails là User object
         if (userDetails instanceof User) {
             User user = (User) userDetails;
-            claims.put("userId", user.getId());
-            claims.put("role", user.getRole().name());
+            claims.put("jti", UUID.randomUUID().toString()); // JWT ID
+            claims.put("userId", user.getId()); // User ID
+            claims.put("role", user.getRole().name()); // User Role
         }
         
         return Jwts.builder()

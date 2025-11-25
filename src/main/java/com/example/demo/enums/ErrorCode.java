@@ -23,7 +23,8 @@ public enum ErrorCode {
     // Refresh Token
     REFRESH_TOKEN_NOT_FOUND(1201, "Refresh token không tồn tại."),
     INVALID_REFRESH_TOKEN(1202, "Refresh token không hợp lệ."),
-    ACCESS_TOKEN_EXPIRED(1203, "Access token đã hết hạn.");
+    ACCESS_TOKEN_EXPIRED(1203, "Access token đã hết hạn."),
+    TOO_MANY_REQUESTS(1300, "Quá nhiều yêu cầu. Vui lòng thử lại sau.");
 
     private int code;
     private String message;
