@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.example.demo.enums.LoginProvider;
 import com.example.demo.enums.Role;
 import com.example.demo.enums.UserStatus;
 import jakarta.persistence.*;
@@ -32,7 +33,13 @@ public class User implements UserDetails {
     private String phoneNumber;
     private String telegramUsername;
     private String lotusUsername;
-    
+    private String googleId;
+    private String facebookId;
+    private String profilePicture;
+    private boolean emailVerified;
+
+    @Enumerated(EnumType.STRING)
+    private LoginProvider provider;
     @Enumerated(EnumType.STRING)
     private Role role;
     @Enumerated(EnumType.STRING)

@@ -22,11 +22,14 @@ public class RefreshToken {
     
     @Column(nullable = false, unique = true)
     private String token;
+
+    @Column(nullable = false)
+    private Boolean isRevoked;
     
     @Column(nullable = false)
     private Instant expiryDate;
     
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 

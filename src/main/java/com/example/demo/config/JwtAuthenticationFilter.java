@@ -1,7 +1,7 @@
 package com.example.demo.config;
 
-import com.example.demo.cache.AccessTokenCache;
 import com.example.demo.dto.response.ErrorResponse;
+import com.example.demo.enums.ErrorCode;
 import com.example.demo.service.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -31,15 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private JwtService jwtService;
     @Autowired
     private UserDetailsService userDetailsService;
-    @Autowired
-    private AccessTokenCache accessTokenCache;
     
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+    ) throws IOException {
         try {
             String authHeader = request.getHeader("Authorization");
             String jwt = null;
@@ -69,10 +67,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    if (accessTokenCache.get(userEmail) == null) {
-                        accessTokenCache.put(userEmail, jwt);
-                    }
-                    
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
@@ -83,7 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
-                    sendErrorResponse(response, "Token không hợp lệ hoặc đã hết hạn", HttpStatus.UNAUTHORIZED);
+                    sendErrorResponse(response, ErrorCode.ACCESS_TOKEN_EXPIRED.getMessage(), HttpStatus.UNAUTHORIZED);
                     return;
                 }
             }

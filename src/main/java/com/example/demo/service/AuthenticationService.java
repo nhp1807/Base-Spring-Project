@@ -5,14 +5,15 @@ import com.example.demo.dto.response.AuthenticationResponse;
 import com.example.demo.dto.request.RefreshTokenRequest;
 import com.example.demo.dto.request.RegisterRequest;
 import com.example.demo.enums.ErrorCode;
+import com.example.demo.enums.LoginProvider;
 import com.example.demo.enums.Role;
 import com.example.demo.enums.UserStatus;
 import com.example.demo.exception.AppException;
 import com.example.demo.model.*;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.RefreshTokenRepository;
-import com.example.demo.cache.AccessTokenCache;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.util.Arrays;
 
 @Service
+@Slf4j
 public class AuthenticationService {
     @Autowired
     private UserRepository repository;
@@ -37,8 +39,6 @@ public class AuthenticationService {
     private JwtService jwtService;
     @Autowired
     private AuthenticationManager authenticationManager;
-    @Autowired
-    private AccessTokenCache accessTokenCache;
 
     @Value("${token.refresh-token-expiration}")
     private long REFRESH_TOKEN_EXPIRATION;
@@ -61,6 +61,7 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .status(UserStatus.ACTIVE)
+                .provider(LoginProvider.USERNAME_PASSWORD)
                 .build();
 
         repository.save(user);
@@ -70,8 +71,6 @@ public class AuthenticationService {
 
         // Save refresh token to database
         saveRefreshToken(refreshToken, user);
-
-        accessTokenCache.put(user.getEmail(), accessToken);
 
         AuthenticationResponse.UserData userData = new AuthenticationResponse.UserData();
         userData.setUserId(user.getId());
@@ -85,6 +84,7 @@ public class AuthenticationService {
                 .user(userData)
                 .build();
 
+        log.info("New user registered: {}", user.getEmail());
         return ResponseEntity.ok(response);
     }
 
@@ -107,8 +107,6 @@ public class AuthenticationService {
         // Save refresh token to database
         saveRefreshToken(refreshToken, user);
 
-        accessTokenCache.put(user.getEmail(), accessToken);
-
         AuthenticationResponse.UserData userData = new AuthenticationResponse.UserData();
         userData.setUserId(user.getId());
         userData.setRole(user.getRole().name());
@@ -121,6 +119,7 @@ public class AuthenticationService {
                 .user(userData)
                 .build();
 
+        log.info("New user authenticated: {}", user.getEmail());
         return ResponseEntity.ok(response);
     }
 
@@ -136,14 +135,18 @@ public class AuthenticationService {
             // Check if refresh token exists in database
             RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
                     .orElseThrow(() -> new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+            if (storedRefreshToken.getIsRevoked()) {
+                throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
+            }
+
             if (jwtService.isTokenValid(refreshToken, userDetails)
                     && storedRefreshToken.getExpiryDate().isAfter(Instant.now())) {
 
                 // Only generate new access token, keep the same refresh token
                 String accessToken = jwtService.generateAccessToken(userDetails);
 
-                accessTokenCache.put(userDetails.getEmail(), accessToken);
-
+                log.info("User {} generated new access token", userEmail);
                 return ResponseEntity.ok(AuthenticationResponse.builder()
                         .accessToken(accessToken)
                         .refreshToken(refreshToken) // Return the same refresh token
@@ -156,28 +159,22 @@ public class AuthenticationService {
 
     @Transactional
     public void saveRefreshToken(String token, User user) {
-        RefreshToken refreshToken = refreshTokenRepository.findByUserId(user.getId())
-                .map(existing -> {
-                    existing.setToken(token);
-                    existing.setExpiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100));
-                    existing.setUser(user);
-                    return existing;
-                })
-                .orElseGet(() -> RefreshToken.builder()
-                        .token(token)
-                        .user(user)
-                        .expiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100))
-                        .build());
-
+        // Lưu refresh token vào database
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(token)
+                .isRevoked(false)
+                .user(user)
+                .expiryDate(Instant.now().plusSeconds(REFRESH_TOKEN_EXPIRATION / 100))
+                .build();
         refreshTokenRepository.save(refreshToken);
     }
 
     @Transactional
     public void logout(String refreshToken) {
-        User user = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND))
-                .getUser();
-        refreshTokenRepository.deleteByUserId(user.getId());
-        accessTokenCache.invalidate(user.getEmail());
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+        refreshTokenEntity.setIsRevoked(true);
+        refreshTokenRepository.save(refreshTokenEntity);
+        log.info("User {} logged out", refreshTokenEntity.getUser().getEmail());
     }
 }

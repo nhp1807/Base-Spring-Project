@@ -1,10 +1,10 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.request.AuthenticationRequest;
-import com.example.demo.dto.request.RefreshTokenRequest;
-import com.example.demo.dto.request.RegisterRequest;
+import com.example.demo.dto.request.*;
 import com.example.demo.dto.response.AuthenticationResponse;
 import com.example.demo.service.AuthenticationService;
+import com.example.demo.service.FacebookAuthService;
+import com.example.demo.service.GoogleAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 public class AuthenticationController {
     @Autowired
     private AuthenticationService service;
+    @Autowired
+    private GoogleAuthService googleAuthService;
+    @Autowired
+    private FacebookAuthService facebookAuthService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> register(
@@ -28,6 +32,22 @@ public class AuthenticationController {
             @RequestBody AuthenticationRequest request
     ) {
         return service.authenticate(request);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthenticationResponse> authenticateWithGoogle(
+            @RequestBody GoogleAuthRequest request
+    ) {
+        AuthenticationResponse response = googleAuthService.authenticateWithGoogle(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/facebook")
+    public ResponseEntity<AuthenticationResponse> authenticateWithFacebook(
+            @RequestBody FacebookAuthRequest request
+    ) {
+        AuthenticationResponse response = facebookAuthService.authenticateWithFacebook(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh-token")
