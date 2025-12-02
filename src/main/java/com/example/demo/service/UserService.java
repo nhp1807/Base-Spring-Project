@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.example.demo.cache.UserCache;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserCache userCache;
 
     public PageResponse<UserResponse> findAll(String firstName, String lastName, String email, String phoneNumber, String telegramUsername, String lotusUsername, Role role, UserStatus status, String sortBy, String sortOrder, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -46,7 +48,7 @@ public class UserService {
     }
 
     public UserResponse findById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = userCache.get(id);
 
         return toUserResponse(user);
     }
@@ -77,7 +79,9 @@ public class UserService {
                 .status(request.getStatus())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        userCache.put(user.getId(), user);
     }
 
     public void update(Long id, UserRequest request) {
@@ -104,7 +108,9 @@ public class UserService {
         user.setRole(request.getRole() != null ? request.getRole() : user.getRole());
         user.setStatus(request.getStatus() != null ? request.getStatus() : user.getStatus());
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        userCache.put(user.getId(), user);
     }
 
     public void delete(Long id) {
@@ -113,6 +119,7 @@ public class UserService {
         }
 
         userRepository.deleteById(id);
+        userCache.invalidate(id);
     }
 
     private UserResponse toUserResponse(User user) {

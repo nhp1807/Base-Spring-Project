@@ -5,134 +5,403 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Sign-In Test</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
         .container {
-            border: 1px solid #ddd;
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #4285f4;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+        }
+
+        .section h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1a73e8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3::before {
+            content: "🔐";
+            font-size: 1.8rem;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .warning h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .warning h3::before {
+            content: "⚠️";
+        }
+
+        .warning p {
+            color: #856404;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .warning ol, .warning ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .warning code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .warning a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .warning a:hover {
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: #e3f2fd;
             padding: 20px;
             border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
         }
-        .result {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            word-break: break-all;
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+
+        .info-item strong {
+            color: #1976d2;
+            font-weight: 600;
+        }
+
         button {
             background: #4285f4;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 14px 28px;
+            border-radius: 6px;
             cursor: pointer;
-            margin: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 10px 5px;
         }
+
         button:hover {
             background: #3367d6;
         }
-        .success {
+
+        #googleLogoutBtn {
+            background: #ea4335;
+        }
+
+        #googleLogoutBtn:hover {
+            background: #c5221f;
+        }
+
+        .result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result.success {
             background: #d4edda;
             color: #155724;
-            border: 1px solid #c3e6cb;
+            border-color: #28a745;
         }
-        .error {
+
+        .result.error {
             background: #f8d7da;
             color: #721c24;
-            border: 1px solid #f5c6cb;
+            border-color: #dc3545;
         }
-        .warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+
+        .result code {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: block;
+            white-space: pre-wrap;
+        }
+
+        .curl-command {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        .curl-command code {
+            color: #4ec9b0;
+        }
+
+        .g_id_signin {
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .info-box {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+
+        /* Scrollbar styling */
+        .result::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .result::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .result::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Google Sign-In Test</h1>
-        
-        <!-- IMPORTANT: Check your current URL -->
-        <div class="warning">
-            <h3>⚠️ IMPORTANT: Check your current URL</h3>
-            <p><strong>Current URL:</strong> <span id="currentUrl"></span></p>
-            <p>If you see "origin_mismatch" error, add this URL to Google Cloud Console:</p>
-            <ol>
-                <li>Go to: <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></li>
-                <li>Edit your OAuth 2.0 Client ID</li>
-                <li>Add these to "Authorized JavaScript origins":</li>
-                <ul>
-                    <li><code>http://localhost:5500</code></li>
-                    <li><code>http://127.0.0.1:5500</code></li>
-                    <li><code>http://localhost:8080</code></li>
-                    <li><code>http://127.0.0.1:8080</code></li>
-                </ul>
-            </ol>
-        </div>
-        
-        <p><strong>Live Server:</strong> Port 5500</p>
-        <p><strong>Backend API:</strong> Port 8080</p>
-        
-        <h3>1. Sign in with Google:</h3>
-        <div id="g_id_onload"
-             data-client_id="262464689596-p294n39abp8odfgg2lt1kaa3kalekok6.apps.googleusercontent.com"
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin"
-             data-type="standard"
-             data-size="large"
-             data-theme="outline"
-             data-text="sign_in_with"
-             data-shape="rectangular"
-             data-logo_alignment="left">
+        <div class="header">
+            <h1>🔐 Google Sign-In Test</h1>
+            <p>Test OAuth 2.0 Authentication with Google</p>
         </div>
 
-        <button id="googleLogoutBtn" onclick="logoutFromGoogle()" style="display:none;">Logout from Google</button>
+        <div class="content">
+            <div class="warning">
+                <h3>IMPORTANT: Check your current URL</h3>
+                <p><strong>Current URL:</strong> <span id="currentUrl"></span></p>
+                <p>If you see "origin_mismatch" error, add this URL to Google Cloud Console:</p>
+                <ol>
+                    <li>Go to: <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></li>
+                    <li>Edit your OAuth 2.0 Client ID</li>
+                    <li>Add these to "Authorized JavaScript origins":</li>
+                    <ul>
+                        <li><code>http://localhost:5500</code></li>
+                        <li><code>http://127.0.0.1:5500</code></li>
+                        <li><code>http://localhost:8080</code></li>
+                        <li><code>http://127.0.0.1:8080</code></li>
+                    </ul>
+                </ol>
+            </div>
 
-        <h3>2. ID Token:</h3>
-        <div id="idToken" class="result">Click "Sign in with Google" to get ID token</div>
+            <div class="info-box">
+                <div class="info-item">
+                    <span>🌐</span>
+                    <div><strong>Live Server:</strong> Port 5500</div>
+                </div>
+                <div class="info-item">
+                    <span>⚙️</span>
+                    <div><strong>Backend API:</strong> Port 8080</div>
+                </div>
+                <div class="info-item">
+                    <span>🆔</span>
+                    <div><strong>Google Client ID:</strong> 2624***ntent.com</div>
+                </div>
+            </div>
 
-        <h3>3. Test API Call:</h3>
-        <button onclick="testApiCall()">Test API Call to Backend (Port 8080)</button>
-        <div id="apiResult" class="result">Click "Test API Call" to see result</div>
+            <div class="section">
+                <h3>Sign in with Google</h3>
+                <div id="g_id_onload"
+                     data-client_id="262464689596-p294n39abp8odfgg2lt1kaa3kalekok6.apps.googleusercontent.com"
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-size="large"
+                     data-theme="outline"
+                     data-text="sign_in_with"
+                     data-shape="rectangular"
+                     data-logo_alignment="left">
+                </div>
+                <button id="googleLogoutBtn" onclick="logoutFromGoogle()" style="display:none;">🚪 Logout from Google</button>
+            </div>
 
-        <h3>4. Stored Tokens:</h3>
-        <div id="storedTokens" class="result">Tokens will appear here after a successful API call</div>
+            <div class="section">
+                <h3>ID Token</h3>
+                <div id="idToken" class="result">Click "Sign in with Google" to get ID token</div>
+            </div>
 
-        <h3>5. Manual Test with curl:</h3>
-        <div class="result">
-            <p><strong>Copy this command and replace YOUR_ID_TOKEN:</strong></p>
-            <code>curl -X POST http://localhost:8080/api/v1/auth/google -H "Content-Type: application/json" -d '{"idToken": "YOUR_ID_TOKEN_HERE"}'</code>
+            <div class="section">
+                <h3>User Info</h3>
+                <div id="userInfo" class="result">User information will appear here after login</div>
+            </div>
+
+            <div class="section">
+                <h3>Test API Call</h3>
+                <button onclick="testApiCall()">🚀 Test API Call to Backend</button>
+                <div id="apiResult" class="result">Click "Test API Call" to see result</div>
+            </div>
+
+            <div class="section">
+                <h3>Stored Tokens</h3>
+                <div id="storedTokens" class="result">Tokens will appear here after a successful API call</div>
+            </div>
+
+            <div class="section">
+                <h3>Manual Test with curl</h3>
+                <p style="margin-bottom: 10px; color: #666;">Copy this command and replace YOUR_ID_TOKEN:</p>
+                <div class="curl-command">
+                    <code>curl -X POST http://localhost:8080/api/v1/auth/google \<br>
+  -H "Content-Type: application/json" \<br>
+  -d '{"idToken": "YOUR_ID_TOKEN_HERE"}'</code>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Display current URL for debugging
         document.getElementById('currentUrl').textContent = window.location.href;
         
         const TOKEN_STORAGE_KEY = 'googleAuthTokens';
         let googleIdToken = null;
+        let googleUserInfo = null;
         let storedTokens = loadStoredTokens();
         updateStoredTokensUI();
+
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Failed to decode JWT:', e);
+                return null;
+            }
+        }
 
         function handleCredentialResponse(response) {
             console.log("Google Sign-In Response:", response);
             
-            // Extract ID token
             const idToken = response.credential;
             googleIdToken = idToken;
-            document.getElementById('idToken').textContent = idToken;
+            document.getElementById('idToken').innerHTML = '<code>' + idToken + '</code>';
             document.getElementById('googleLogoutBtn').style.display = 'inline-block';
             
-            console.log("ID Token:", idToken);
+            // Decode JWT to get user info
+            const decodedToken = decodeJWT(idToken);
+            if (decodedToken) {
+                googleUserInfo = {
+                    sub: decodedToken.sub,
+                    email: decodedToken.email,
+                    name: decodedToken.name,
+                    given_name: decodedToken.given_name,
+                    family_name: decodedToken.family_name,
+                    picture: decodedToken.picture,
+                    email_verified: decodedToken.email_verified
+                };
+                document.getElementById('userInfo').innerHTML = '<code>' + JSON.stringify(googleUserInfo, null, 2) + '</code>';
+                document.getElementById('userInfo').className = 'result success';
+            }
             
-            // Auto-test API call after successful sign-in
+            console.log("ID Token:", idToken);
+            console.log("User Info:", googleUserInfo);
+            
             setTimeout(() => {
                 testApiCall();
             }, 1000);
@@ -164,17 +433,17 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    apiResult.textContent = '✅ Success!\n\n' + JSON.stringify(result, null, 2);
+                    apiResult.innerHTML = '<code>✅ Success!\n\n' + JSON.stringify(result, null, 2) + '</code>';
                     apiResult.className = 'result success';
                     storeTokens(result);
                     console.log('✅ API Call Success:', result);
                 } else {
-                    apiResult.textContent = '❌ Error: ' + JSON.stringify(result, null, 2);
+                    apiResult.innerHTML = '<code>❌ Error: ' + JSON.stringify(result, null, 2) + '</code>';
                     apiResult.className = 'result error';
                     console.error('❌ API Call Error:', result);
                 }
             } catch (error) {
-                apiResult.textContent = '❌ Network Error: ' + error.message;
+                apiResult.innerHTML = '<code>❌ Network Error: ' + error.message + '</code>';
                 apiResult.className = 'result error';
                 console.error('❌ Network Error:', error);
             }
@@ -184,8 +453,11 @@
             google.accounts.id.disableAutoSelect();
             callBackendLogout();
             googleIdToken = null;
+            googleUserInfo = null;
             clearStoredTokens();
             document.getElementById('idToken').textContent = 'Click "Sign in with Google" to get ID token';
+            document.getElementById('userInfo').textContent = 'User information will appear here after login';
+            document.getElementById('userInfo').className = 'result';
             document.getElementById('apiResult').textContent = 'Click "Test API Call" to see result';
             document.getElementById('apiResult').className = 'result';
             document.getElementById('googleLogoutBtn').style.display = 'none';
@@ -221,7 +493,7 @@
         function updateStoredTokensUI() {
             const storedTokensDiv = document.getElementById('storedTokens');
             if (storedTokens && storedTokens.accessToken && storedTokens.refreshToken) {
-                storedTokensDiv.textContent = JSON.stringify(storedTokens, null, 2);
+                storedTokensDiv.innerHTML = '<code>' + JSON.stringify(storedTokens, null, 2) + '</code>';
                 storedTokensDiv.className = 'result success';
             } else {
                 storedTokensDiv.textContent = 'Tokens will appear here after a successful API call';
@@ -249,4 +521,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
